@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      physicalProperties.liquid;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       44.01;    // CO2 molecular weight
+    }
+    
+    transport
+    {
+        mu              8.0e-5;   // Dynamic viscosity for liquid CO2
+        Pr              2.3;      // Prandtl number
+    }
+    
+    thermodynamics
+    {
+        Cp              2300;     // Specific heat capacity [J/kg/K]
+        Hf              0;        // Heat of formation
+    }
+    
+    equationOfState
+    {
+        rho             900;      // Density of liquid CO2 at 5 MPa and 288K
+    }
+}
+
+
+// ************************************************************************* //

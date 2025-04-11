@@ -1,0 +1,275 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      phaseProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+type    thermalPhaseChangeMultiphaseSystem;
+
+phases (gas liquid);
+
+gas
+{
+    type            purePhaseModel;
+    diameterModel   IATE;
+
+    IATECoeffs
+    {
+        dMax 1e-2;
+        dMin 1e-4;
+        residualAlpha 1e-4;
+        
+      
+
+        sources
+        (
+            wakeEntrainmentCoalescence
+            {
+                Cwe        0.0005;// 0.002;
+            }
+
+            randomCoalescence
+            {
+                Crc         0.01;//0.04;
+                C           3;
+                alphaMax    0.75;
+            }
+
+            turbulentBreakUp
+            {
+                Cti         0.025;//0.085;
+                WeCr        6;
+            }
+
+            phaseChange
+            {
+                otherPhase  liquid;
+                dmdtf       thermalPhaseChange:dmdtf;
+            }
+
+            wallBoiling
+            {}
+        );
+    }
+
+    constantCoeffs
+    {
+        d               0.0005;     // Increased from 0.00045 for high-pressure case
+    }
+
+    residualAlpha   1e-6;
+}
+
+liquid
+{
+    type            purePhaseModel;
+    diameterModel   none;
+    Sc              0.7;
+
+    residualAlpha   1e-6;
+}
+
+drag
+{
+    gas_dispersedIn_liquid
+    {
+        type            IshiiZuber;
+    }
+}
+
+virtualMass
+{
+    gas_dispersedIn_liquid
+    {
+        type            constantCoefficient;
+        Cvm             0.5;
+    }
+}
+
+heatTransfer
+{
+    gas_dispersedIn_liquid_inThe_gas
+    {
+        type spherical;
+    }
+
+    gas_dispersedIn_liquid_inThe_liquid
+    {
+        type RanzMarshall;
+    }
+    
+ 
+    
+}
+
+lift
+{
+    gas_dispersedIn_liquid
+    {
+        type wallDamped;
+
+        lift
+        {
+            type Tomiyama;
+            Cl 0.288;
+
+            aspectRatio
+            {
+                type constant;
+                E0 1;
+            }
+        }
+
+        wallDamping
+        {
+            type    cosine;
+            Cd      1.0;
+            zeroWallDist 0.0002;
+        }
+    }
+}
+
+wallLubrication
+{
+    gas_dispersedIn_liquid
+    {
+        type            Antal;
+        Cw1             -0.01;
+        Cw2             0.05;
+    }
+}
+
+turbulentDispersion
+{
+    gas_dispersedIn_liquid
+    {
+        type                LopezDeBertodano;
+        Ctd                 1.0;
+        residualAlpha       1e-3;
+    }
+}
+
+blending
+{
+    default
+    {
+        type            continuous;
+        phase           liquid;
+    }
+}
+
+surfaceTension
+{
+    gas_liquid
+    {
+        type            constant;
+        sigma           0.0022;     // Surface tension of CO2 at high pressure
+    }
+}
+
+/*
+interfaceCompression
+{
+    gas_liquid
+    {
+        type            constant;
+        cAlpha          1.0;        // Compression coefficient
+    }
+}
+*/
+
+/*
+saturationTemperature
+{
+    steam_water
+    {
+        type            constant;
+        value           372.76;
+    }
+}
+*/
+
+
+
+saturationTemperature
+{
+    /*gas_liquid
+    {
+        type            function1;
+
+        function
+        {
+            type            table;
+            format          csv;
+            nHeaderLine     1;
+            units           ([MPa] [K]);
+            columns         (1 0);
+            mergeSeparators no;
+            file "$FOAM_TUTORIALS/resources/thermoData/high_pressue_liquid_CO2_phase_change.csv";
+            outOfBounds     clamp;
+            interpolationScheme linear;
+        }
+    }*/
+    
+    
+    
+    gas_liquid
+    {
+        type            constant;  
+        value           281.8;     
+    }
+}
+
+
+
+
+
+phaseTransfer
+{
+    gas_liquid
+    {
+       type            cavitation;
+        model           Merkle;  // Merkle model tends to be more stable than SchnerrSauer
+        pair            (gas liquid);
+        liquid          liquid;
+        vapour          gas;
+        
+        MerkleCoeffs
+        {
+            UInf            10.0;   // Reference velocity scale
+            tInf            0.001;  // Reference time scale
+            Cc              0.005;    // Conservative condensation coefficient (reduced)
+            Cv              0.002;   // Conservative vaporization coefficient (reduced)
+            pSat            1e5;    // Saturation pressure
+            Tsat            281.8;  // Saturation temperature
+            limitedRate     true;   // Enable rate limiting for stability
+            alphaMin        1e-4;   // Minimum volume fraction for phase change
+            rhoMin          0.1;    // Minimum density to prevent negative values
+            
+            // Important physical properties
+            latentHeat      154000; // Latent heat for CO2 at operating conditions
+            species         CO2;
+            
+            // Required by the model
+            liquid          liquid;
+            vapour          gas;
+        }
+    }
+}
+
+
+
+
+
+
+// ************************************************************************* //

@@ -1,0 +1,116 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    /*"alpha.*"
+    {
+        nAlphaCorr      1;
+        nAlphaSubCycles 1;
+    }
+*/
+    p_rgh
+    {
+        solver          GAMG;
+        smoother        DIC;
+        tolerance       1e-8;
+        relTol          0.001;//0.01;
+        maxIter         50;//20;
+        minIter         3;//2;
+    }
+
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+    }
+
+
+
+
+    
+    // For alpha equations
+    "alpha.*"
+    {
+        nAlphaCorr      2;
+        nAlphaSubCycles 2;//1;
+    }
+    
+    
+    
+    
+    "(e|h).*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-12;
+        relTol          0.0001;
+        minIter         2;//1;
+        maxIter         50;//20;
+    }
+    
+
+    "(k|epsilon|omega).*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0.001;//0;
+        minIter         1;
+    }
+
+    "kappai.*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-6;
+        relTol          0.01;//0;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor   no;
+    nOuterCorrectors    3;//1;
+    nCorrectors         2;//1;
+    nNonOrthogonalCorrectors 1;//0;
+    nEnergyCorrectors   2;//1;
+
+    faceMomentum        no;
+    VmDdtCorrection     yes;
+    dragCorrection      yes;
+}
+
+relaxationFactors
+{
+    fields
+    {
+        thermalPhaseChange:dmdtf 0.1;//1;
+              "alpha.*"       0.7;           // Add phase fraction relaxation
+        p_rgh           0.7;           // Add pressure relaxation
+    }
+
+    equations
+    {
+        ".*"            0.3;           // Global equation relaxation
+        "U\..*"         0.7;           // Velocity relaxation
+        "h\..*"         0.3;           // Energy equation needs stronger relaxation
+        "(k|epsilon).*" 0.5;           // Turbulence relaxation
+    }
+}
+
+
+// ************************************************************************* //
